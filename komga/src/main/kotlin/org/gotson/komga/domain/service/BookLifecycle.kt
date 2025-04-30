@@ -3,6 +3,7 @@ package org.gotson.komga.domain.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.BookAction
+import org.gotson.komga.domain.model.BookPageNumbered
 import org.gotson.komga.domain.model.BookWithMedia
 import org.gotson.komga.domain.model.DomainEvent
 import org.gotson.komga.domain.model.HistoricalEvent
@@ -135,6 +136,32 @@ class BookLifecycle(
     logger.info { "Hash and persist pages for book: $book" }
 
     mediaRepository.update(bookAnalyzer.hashPages(BookWithMedia(book, mediaRepository.findById(book.id))))
+  }
+
+  fun hashSpecificPagesAndPersist(
+    book: Book,
+    pagesToHash: Collection<BookPageNumbered>,
+  ): Collection<BookPageNumbered> {
+    if (!libraryRepository.findById(book.libraryId).hashPages) {
+      logger.info { "Page hashing is disabled for the library, it may have changed since the task was submitted, skipping" }
+      return emptyList()
+    }
+
+    logger.info { "Hash and persist specific pages for book: $book" }
+
+    val updatedMedia = bookAnalyzer.hashSpecificPages(BookWithMedia(book, mediaRepository.findById(book.id)), pagesToHash)
+    mediaRepository.update(updatedMedia)
+
+    return pagesToHash.map { page ->
+      BookPageNumbered(
+        page.fileName,
+        page.mediaType,
+        page.dimension,
+        updatedMedia.pages[page.pageNumber - 1].fileHash,
+        page.fileSize,
+        page.pageNumber,
+      )
+    }
   }
 
   fun generateThumbnailAndPersist(book: Book) {
