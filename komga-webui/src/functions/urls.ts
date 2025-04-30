@@ -38,6 +38,10 @@ export function bookPageThumbnailUrl(bookId: string, page: number): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}/thumbnail`
 }
 
+export function bookPageThumbnailUrlWithNonce(bookId: string, page: number, nonce: string): string {
+  return `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}/thumbnail?nonce=${nonce}`
+}
+
 export function bookManifestUrl(bookId: string): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/manifest`
 }

@@ -142,6 +142,14 @@ class TaskEmitter(
       .let { submitTasks(it) }
   }
 
+  fun removeUnhashedPages(
+    bookId: String,
+    pages: Collection<BookPageNumbered>,
+    priority: Int = DEFAULT_PRIORITY,
+  ) {
+    submitTask(Task.RemoveUnhashedPages(bookId, pages, priority))
+  }
+
   fun analyzeBook(
     book: Book,
     priority: Int = DEFAULT_PRIORITY,
