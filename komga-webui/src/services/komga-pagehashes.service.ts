@@ -100,4 +100,17 @@ export default class KomgaPageHashesService {
       throw new Error(msg)
     }
   }
+
+  async deleteUnhashedPage(match: PageHashMatchDto) {
+    try {
+      await this.http.post(`${API_PAGE_HASH}/unhashed/delete-specific-page`, match)
+    } catch (e) {
+      let msg = `An error occurred while trying to execute delete specific page on book ${match.bookId}`
+      if (e.response?.data?.message) {
+        msg += `: ${e.response.data.message}`
+      }
+      throw new Error(msg)
+    }
+  }
+
 }
