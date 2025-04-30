@@ -19,6 +19,15 @@ export function getBookFormatFromMedia(media: MediaDto): BookFormat {
   }
 }
 
+export function getBookCanDeletePagesFromMedia(media: MediaDto): boolean {
+  switch (media.mediaType) {
+    case 'application/zip':
+      return true
+    default:
+      return false
+  }
+}
+
 export function getBookFormatFromMediaType(mediaType: string): BookFormat {
   switch (mediaType) {
     case 'application/x-rar-compressed':

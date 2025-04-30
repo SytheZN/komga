@@ -165,4 +165,26 @@ class PageHashController(
 
     taskEmitter.removeDuplicatePages(toRemove.first, toRemove.second)
   }
+
+  @Operation(summary = "Delete specific unhashed page")
+  @PostMapping("unhashed/delete-specific-page")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  fun deleteSingleMatch(
+    @RequestBody matchDto: PageHashMatchDto,
+  ) {
+    val toRemove =
+      Pair(
+        matchDto.bookId,
+        listOf(
+          BookPageNumbered(
+            fileName = matchDto.fileName,
+            mediaType = matchDto.mediaType,
+            fileSize = matchDto.fileSize,
+            pageNumber = matchDto.pageNumber,
+          ),
+        ),
+      )
+
+    taskEmitter.removeUnhashedPages(toRemove.first, toRemove.second)
+  }
 }

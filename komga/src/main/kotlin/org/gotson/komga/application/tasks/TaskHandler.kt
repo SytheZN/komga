@@ -144,6 +144,14 @@ class TaskHandler(
               }
             } ?: logger.warn { "Cannot execute task $task: Book does not exist" }
 
+          is Task.RemoveUnhashedPages ->
+            bookRepository.findByIdOrNull(task.bookId)?.let { book ->
+              val hashedPages = bookLifecycle.hashSpecificPagesAndPersist(book, task.pages)
+              if (hashedPages.any()) {
+                taskEmitter.removeDuplicatePages(book.id, hashedPages, task.priority)
+              }
+            } ?: logger.warn { "Cannot execute task $task: Book does not exist" }
+
           is Task.HashBook ->
             bookRepository.findByIdOrNull(task.bookId)?.let { book ->
               bookLifecycle.hashAndPersist(book)

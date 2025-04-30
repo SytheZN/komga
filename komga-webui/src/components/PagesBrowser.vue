@@ -46,7 +46,7 @@
                   </v-btn>
 
                   <v-btn icon
-                    v-if="isAdmin && canDelete(page)"
+                    v-if="isAdmin && canDelete"
                     :style="'position: absolute; bottom: 5px; ' + ($vuetify.rtl ? 'left' : 'right' ) +': 5px'"
                     @click="promptDeletePage(page)">
                     <v-icon>mdi-delete</v-icon>
@@ -56,7 +56,7 @@
               </v-fade-transition>
             </v-img>
 
-            <v-card-subtitle v-line-clamp="2">{{ page.number }}
+            <v-card-subtitle v-line-clamp="2">{{ page.fileName }}
             </v-card-subtitle>
           </v-card>
           </template>
@@ -67,8 +67,8 @@
     <confirmation-dialog
       v-model="modalDeletePage"
       :title="$t('dialog.delete_page.dialog_title')"
-      :body-html="$t('dialog.delete_page.warning_html', {number: pageToDelete.number})"
-      :confirm-text="$t('dialog.delete_page.confirm_delete', {number: pageToDelete.number})"
+      :body-html="$t('dialog.delete_page.warning_html', {number: pageToDelete.fileName})"
+      :confirm-text="$t('dialog.delete_page.confirm_delete', {number: pageToDelete.fileName})"
       :button-confirm="$t('dialog.delete_page.button_confirm')"
       button-confirm-color="error"
       @confirm="deletePage"
@@ -79,7 +79,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import {bookPageThumbnailUrl} from '@/functions/urls'
+import {bookPageThumbnailUrlWithNonce} from '@/functions/urls'
 import {PageDto} from '@/types/komga-books'
 import {BOOK_CHANGED, ERROR} from '@/types/events'
 import {BookSseDto} from '@/types/komga-sse'
@@ -103,6 +103,9 @@ export default Vue.extend({
     blur: {
       type: Boolean,
     },
+    canDelete: {
+      type: Boolean,
+    },
   },
   data: () => {
     return {
@@ -110,6 +113,7 @@ export default Vue.extend({
       pages: [] as PageDto[],
       modalDeletePage: false,
       pageToDelete: {} as PageDto,
+      nonce: '',
     }
   },
   async created() {
@@ -118,6 +122,16 @@ export default Vue.extend({
   },
   beforeDestroy() {
     this.$eventHub.$off(BOOK_CHANGED, this.bookChanged)
+  },
+  watch: {
+    bookId: {
+      immediate: true, // Ensures the watcher runs on component initialization
+      handler(newBookId: string, oldBookId: string) {
+        if (newBookId !== oldBookId) {
+          this.loadPages(newBookId)
+        }
+      },
+    },
   },
   computed: {
     totalPages(): number {
@@ -144,15 +158,15 @@ export default Vue.extend({
   methods: {
     async loadPages(bookId: string) {
       this.pages = await this.$komgaBooks.getBookPages(bookId)
+
+      // Generate a 10-digit random number
+      this.nonce = Math.floor(1000000000 + Math.random() * 9000000000).toString() 
     },
     bookChanged(event: BookSseDto) {
       if (event.bookId === this.bookId) this.loadPages(this.bookId)
     },
     getThumbnailUrl(page: PageDto): string {
-      return bookPageThumbnailUrl(this.bookId, page.number)
-    },
-    canDelete(page: PageDto): boolean {
-      return (page.fileHash ?? '').trim().length !== 0
+      return bookPageThumbnailUrlWithNonce(this.bookId, page.number, this.nonce)
     },
     goTo(page: PageDto, incognito: boolean = false): void {
       this.$router.push(
@@ -173,12 +187,7 @@ export default Vue.extend({
     },
     async deletePage() {
       try {
-        await this.$komgaPageHashes.deleteSingleMatch(
-          {
-            hash: this.pageToDelete.fileHash ?? '',
-            size: this.pageToDelete.sizeBytes,
-            matchCount: 1,
-          },
+        await this.$komgaPageHashes.deleteUnhashedPage(
           {
             bookId: this.bookId,
             url: '',
