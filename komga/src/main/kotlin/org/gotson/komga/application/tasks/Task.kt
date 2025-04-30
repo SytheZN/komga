@@ -200,6 +200,16 @@ sealed class Task(
     override fun toString(): String = "RemoveHashedPages(bookId='$bookId', priority='$priority')"
   }
 
+  class RemoveUnhashedPages(
+    val bookId: String,
+    val pages: Collection<BookPageNumbered>,
+    priority: Int = DEFAULT_PRIORITY,
+  ) : Task(priority) {
+    override val uniqueId: String = "REMOVE_UNHASHED_PAGES_$bookId"
+
+    override fun toString(): String = "RemoveUnhashedPages(bookId='$bookId', priority='$priority')"
+  }
+
   class RebuildIndex(
     val entities: Set<LuceneEntity>?,
     priority: Int = DEFAULT_PRIORITY,

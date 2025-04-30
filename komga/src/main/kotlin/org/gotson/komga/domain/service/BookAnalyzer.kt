@@ -3,6 +3,7 @@ package org.gotson.komga.domain.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.BookPage
+import org.gotson.komga.domain.model.BookPageNumbered
 import org.gotson.komga.domain.model.BookWithMedia
 import org.gotson.komga.domain.model.Dimension
 import org.gotson.komga.domain.model.Media
@@ -370,6 +371,27 @@ class BookAnalyzer(
     val hashedPages =
       book.media.pages.mapIndexed { index, bookPage ->
         if (bookPage.fileHash.isBlank() && (index < pageHashing || index >= (book.media.pageCount - pageHashing))) {
+          val content = getPageContent(book, index + 1)
+          val hash = hashPage(bookPage, content)
+          bookPage.copy(fileHash = hash)
+        } else {
+          bookPage
+        }
+      }
+
+    return book.media.copy(pages = hashedPages)
+  }
+
+  /**
+   * Will hash the provided pages of the given book.
+   */
+  fun hashSpecificPages(
+    book: BookWithMedia,
+    pagesToHash: Collection<BookPageNumbered>,
+  ): Media {
+    val hashedPages =
+      book.media.pages.mapIndexed { index, bookPage ->
+        if (bookPage.fileHash.isBlank() && (pagesToHash.any { it.pageNumber == (index + 1) })) {
           val content = getPageContent(book, index + 1)
           val hash = hashPage(bookPage, content)
           bookPage.copy(fileHash = hash)

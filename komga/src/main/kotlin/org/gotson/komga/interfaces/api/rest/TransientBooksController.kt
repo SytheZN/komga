@@ -110,7 +110,7 @@ class TransientBooksController(
             height = bookPage.dimension?.height,
             sizeBytes = bookPage.fileSize,
             fileHash = bookPage.fileHash,
-            )
+          )
         },
       files = media.files.map { it.fileName },
       comment = media.comment ?: "",

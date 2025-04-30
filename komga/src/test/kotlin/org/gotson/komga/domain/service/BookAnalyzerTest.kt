@@ -7,6 +7,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.BookPage
+import org.gotson.komga.domain.model.BookPageNumbered
 import org.gotson.komga.domain.model.BookWithMedia
 import org.gotson.komga.domain.model.Media
 import org.gotson.komga.domain.model.MediaExtensionEpub
@@ -287,6 +288,34 @@ class BookAnalyzerTest(
           .dropLast(komgaProperties.pageHashing)
           .map { it.fileHash },
       ).hasSize(30 - (komgaProperties.pageHashing * 2))
+        .containsOnly("")
+    }
+
+    @Test
+    fun `given book with more than 6 pages when hashing specific pages then only provided pages are hashed`() {
+      val book = makeBook("book1")
+      val pages = (1..30).map { BookPage("$it.jpeg", "image/jpeg") }
+      val pageNumbersToHash = listOf(10, 14)
+      val media = Media(Media.Status.READY, pages = pages)
+      val pagesToHash = pageNumbersToHash.map { BookPageNumbered("$it.jpeg", "image/jpeg", pageNumber = it) }
+
+      every { bookAnalyzer.getPageContent(any(), any()) } returns ByteArray(1)
+      every { bookAnalyzer.hashPage(any(), any()) } returns "hashed"
+
+      val hashedMedia = bookAnalyzer.hashSpecificPages(BookWithMedia(book, media), pagesToHash)
+
+      assertThat(hashedMedia.pages).hasSize(30)
+      assertThat(
+        hashedMedia.pages
+          .filter { it.fileName in pageNumbersToHash.map { "$it.jpeg" } }
+          .map { it.fileHash },
+      ).hasSize(2)
+        .containsOnly("hashed")
+      assertThat(
+        hashedMedia.pages
+          .filter { it.fileName !in pageNumbersToHash.map { "$it.jpeg" } }
+          .map { it.fileHash },
+      ).hasSize(28)
         .containsOnly("")
     }
 
