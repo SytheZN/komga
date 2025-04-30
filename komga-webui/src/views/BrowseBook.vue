@@ -362,7 +362,7 @@
         </v-col>
       </v-row>
 
-      <v-row v-if="book.metadata.links.length > 0" class="align-center text-caption">
+      <v-row v-if="book.metadata.links?.length ?? 0 > 0" class="align-center text-caption">
         <v-col class="py-1 text-uppercase" cols="4" sm="3" md="2" xl="1">{{ $t('browse_book.links') }}</v-col>
         <v-col class="py-1" cols="8" sm="9" md="10" xl="11">
           <v-chip
@@ -443,6 +443,7 @@
             :pageSize="pageSize"
             :readRouteName="readRouteName"
             :blur="shouldBlur"
+            :canDelete="canDeletePages"
           />
         </v-col>
       </v-row>
@@ -459,7 +460,7 @@ import PagesBrowser from '@/components/PagesBrowser.vue'
 import PageSizeSelect from '@/components/PageSizeSelect.vue'
 import ToolbarSticky from '@/components/bars/ToolbarSticky.vue'
 import {groupAuthorsByRole} from '@/functions/authors'
-import {getBookFormatFromMedia, getBookReadRouteFromMedia} from '@/functions/book-format'
+import {getBookCanDeletePagesFromMedia, getBookFormatFromMedia, getBookReadRouteFromMedia} from '@/functions/book-format'
 import {getPagesLeft, getReadProgress, getReadProgressPercentage} from '@/functions/book-progress'
 import {getBookTitleCompact} from '@/functions/book-title'
 import {bookFileUrl, bookThumbnailUrl} from '@/functions/urls'
@@ -566,6 +567,9 @@ export default Vue.extend({
     canDownload(): boolean {
       return this.$store.getters.meFileDownload && !this.unavailable
     },
+    canDeletePages(): boolean {
+      return getBookCanDeletePagesFromMedia(this.book.media)
+    },
     thumbnailUrl(): string {
       return bookThumbnailUrl(this.bookId)
     },
@@ -623,19 +627,12 @@ export default Vue.extend({
       const allRoles = this.$_.uniq([...authorRoles, ...(this.book.metadata.authors.map(x => x.role))])
       return allRoles.filter(x => this.authorsByRole[x])
     },
-    previewPages(): number {
-      if (this.book.media.mediaProfile.toLowerCase() === 'epub')
-        return 0
-      else
-        return this.book.media.pagesCount
-    },
     isBlurUnread(): boolean {
       return this.$store.getters.getClientSettings[CLIENT_SETTING.WEBUI_POSTER_BLUR_UNREAD]?.value === 'true'
     },
     shouldBlur(): boolean | undefined {
       return this.isBlurUnread && !this.isRead
     },
-
   },
   methods: {
     getLibraryName(item: BookDto): string {
