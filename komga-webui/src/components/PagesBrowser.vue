@@ -22,6 +22,7 @@
             <v-img 
               :src="getThumbnailUrl(page)"
               aspect-ratio="0.7071" 
+              :contain="true"
               :class="blur ? 'item-card blur' : 'item-card'">
               <v-fade-transition>
                 <v-overlay
