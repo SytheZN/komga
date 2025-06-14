@@ -80,7 +80,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import {bookPageThumbnailUrlWithNonce} from '@/functions/urls'
+import {bookPageThumbnailUrlWithFilename} from '@/functions/urls'
 import {PageDto} from '@/types/komga-books'
 import {BOOK_CHANGED, ERROR} from '@/types/events'
 import {BookSseDto} from '@/types/komga-sse'
@@ -114,7 +114,6 @@ export default Vue.extend({
       pages: [] as PageDto[],
       modalDeletePage: false,
       pageToDelete: {} as PageDto,
-      nonce: '',
     }
   },
   async created() {
@@ -159,15 +158,12 @@ export default Vue.extend({
   methods: {
     async loadPages(bookId: string) {
       this.pages = await this.$komgaBooks.getBookPages(bookId)
-
-      // Generate a 10-digit random number
-      this.nonce = Math.floor(1000000000 + Math.random() * 9000000000).toString() 
     },
     bookChanged(event: BookSseDto) {
       if (event.bookId === this.bookId) this.loadPages(this.bookId)
     },
     getThumbnailUrl(page: PageDto): string {
-      return bookPageThumbnailUrlWithNonce(this.bookId, page.number, this.nonce)
+      return bookPageThumbnailUrlWithFilename(this.bookId, page.number, page.fileName)
     },
     goTo(page: PageDto, incognito: boolean = false): void {
       this.$router.push(
