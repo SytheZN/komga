@@ -85,6 +85,7 @@ import {PageDto} from '@/types/komga-books'
 import {BOOK_CHANGED, ERROR} from '@/types/events'
 import {BookSseDto} from '@/types/komga-sse'
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
+import { stringify } from 'qs'
 
 export default Vue.extend({
   name: 'PagesBrowser',
@@ -94,12 +95,14 @@ export default Vue.extend({
   props: {
     bookId: {
       type: String,
+      default: '',
     },
     readRouteName: {
       type: String,
     },
     pageSize: {
       type: Number,
+      default: 10,
     },
     blur: {
       type: Boolean,
@@ -157,6 +160,8 @@ export default Vue.extend({
   },
   methods: {
     async loadPages(bookId: string) {
+      this.pages = []
+      await this.$nextTick()
       this.pages = await this.$komgaBooks.getBookPages(bookId)
     },
     bookChanged(event: BookSseDto) {
