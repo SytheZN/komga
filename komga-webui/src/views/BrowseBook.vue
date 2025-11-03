@@ -568,7 +568,8 @@ export default Vue.extend({
       return this.$store.getters.meFileDownload && !this.unavailable
     },
     canDeletePages(): boolean {
-      return getBookCanDeletePagesFromMedia(this.book.media)
+      return getBookCanDeletePagesFromMedia(this.book.media) &&
+        this.$store.getters.getLibraryById(this.book.libraryId).hashPages
     },
     thumbnailUrl(): string {
       return bookThumbnailUrl(this.bookId)

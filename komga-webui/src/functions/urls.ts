@@ -38,8 +38,8 @@ export function bookPageThumbnailUrl(bookId: string, page: number): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}/thumbnail`
 }
 
-export function bookPageThumbnailUrlWithFilename(bookId: string, page: number, filename: string): string {
-  return `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}/thumbnail?filename=${filename}`
+export function bookPageThumbnailUrlWithFilename(bookId: string, filename: string): string {
+  return `${urls.originNoSlash}/api/v1/books/${bookId}/pages/by-filename/${encodeURIComponent(filename)}/thumbnail`
 }
 
 export function bookManifestUrl(bookId: string): string {
