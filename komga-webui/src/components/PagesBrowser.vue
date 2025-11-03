@@ -19,11 +19,24 @@
           <v-card
             class="my-2 mx-2"
             width="150">
-            <v-img 
+            <v-img
               :src="getThumbnailUrl(page)"
-              aspect-ratio="0.7071" 
+              aspect-ratio="0.7071"
               :contain="true"
               :class="blur ? 'item-card blur' : 'item-card'">
+              <template v-slot:placeholder>
+                <v-row
+                  class="fill-height ma-0"
+                  align="center"
+                  justify="center"
+                >
+                  <img
+                    :src="placeholderImage"
+                    alt="Loading"
+                    style="opacity: 0.2; width: 100%; height: auto;"
+                  />
+                </v-row>
+              </template>
               <v-fade-transition>
                 <v-overlay
                   v-if="hover"
@@ -85,6 +98,7 @@ import {PageDto} from '@/types/komga-books'
 import {BOOK_CHANGED, ERROR} from '@/types/events'
 import {BookSseDto} from '@/types/komga-sse'
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
+import {coverBase64} from '@/types/image'
 import { stringify } from 'qs'
 
 export default Vue.extend({
@@ -157,6 +171,9 @@ export default Vue.extend({
     isAdmin(): boolean {
       return this.$store.getters.meAdmin
     },
+    placeholderImage(): string {
+      return coverBase64
+    },
   },
   methods: {
     async loadPages(bookId: string) {
@@ -168,7 +185,9 @@ export default Vue.extend({
       if (event.bookId === this.bookId) this.loadPages(this.bookId)
     },
     getThumbnailUrl(page: PageDto): string {
-      return bookPageThumbnailUrlWithFilename(this.bookId, page.number, page.fileName)
+      // Sanitize filename by replacing path separators with underscores
+      const sanitizedFilename = page.fileName.replace(/\//g, '_').replace(/\\/g, '_')
+      return bookPageThumbnailUrlWithFilename(this.bookId, sanitizedFilename)
     },
     goTo(page: PageDto, incognito: boolean = false): void {
       this.$router.push(

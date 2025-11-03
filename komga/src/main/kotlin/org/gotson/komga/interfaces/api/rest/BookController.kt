@@ -33,6 +33,7 @@ import org.gotson.komga.domain.persistence.ReadListRepository
 import org.gotson.komga.domain.persistence.ThumbnailBookRepository
 import org.gotson.komga.domain.service.BookAnalyzer
 import org.gotson.komga.domain.service.BookLifecycle
+import org.gotson.komga.domain.service.BookPageThumbnailBatchService
 import org.gotson.komga.infrastructure.image.ImageAnalyzer
 import org.gotson.komga.infrastructure.jooq.UnpagedSorted
 import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
@@ -115,6 +116,7 @@ class BookController(
   private val webPubGenerator: WebPubGenerator,
   private val contentRestrictionChecker: ContentRestrictionChecker,
   private val commonBookController: CommonBookController,
+  private val bookPageThumbnailBatchService: BookPageThumbnailBatchService,
 ) {
   @Deprecated("use /v1/books/list instead")
   @PageableAsQueryParam
@@ -527,6 +529,43 @@ class BookController(
       } catch (ex: IndexOutOfBoundsException) {
         throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Page number does not exist")
       } catch (ex: ImageConversionException) {
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, ex.message)
+      } catch (ex: MediaNotReadyException) {
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book analysis failed")
+      } catch (ex: NoSuchFileException) {
+        logger.warn(ex) { "File not found: $book" }
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found, it may have moved")
+      }
+    } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+
+  @Operation(
+    summary = "Generate all thumbnails for book pages and get book page thumbnail by filename",
+    description = "The image is resized to 300px on the largest dimension.",
+    tags = [OpenApiConfiguration.TagNames.BOOK_PAGES],
+  )
+  @ApiResponse(content = [Content(schema = Schema(type = "string", format = "binary"))])
+  @GetMapping(
+    value = ["api/v1/books/{bookId}/pages/by-filename/{filename}/thumbnail"],
+    produces = [MediaType.IMAGE_JPEG_VALUE],
+  )
+  fun getBookPageThumbnailByFilename(
+    @AuthenticationPrincipal principal: KomgaPrincipal,
+    @PathVariable bookId: String,
+    @PathVariable filename: String,
+  ): ResponseEntity<ByteArray> =
+    bookRepository.findByIdOrNull(bookId)?.let { book ->
+      contentRestrictionChecker.checkContentRestriction(principal.user, book)
+
+      try {
+        val thumbnail = bookPageThumbnailBatchService.getThumbnail(bookId, filename)
+          ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: $filename")
+
+        ResponseEntity
+          .ok()
+          .cacheControl(org.springframework.http.CacheControl.maxAge(365, java.util.concurrent.TimeUnit.DAYS).cachePublic().immutable())
+          .contentType(MediaType.IMAGE_JPEG)
+          .body(thumbnail)
+      } catch (ex: IllegalArgumentException) {
         throw ResponseStatusException(HttpStatus.NOT_FOUND, ex.message)
       } catch (ex: MediaNotReadyException) {
         throw ResponseStatusException(HttpStatus.NOT_FOUND, "Book analysis failed")
